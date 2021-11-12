@@ -10,6 +10,10 @@ app.use(urlencoded({ extended: false }))
 app.use(json({limit: "300mb"}))
 app.use('/api', api)
 
+app.get('/', (req, res) => {
+    res.send('Hello World!')
+})
+
 app.listen(process.env.PORT || 3000, () => {
   console.log("Server running on port 3000");
 });
