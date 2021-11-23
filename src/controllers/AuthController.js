@@ -1,20 +1,21 @@
 import { v4 as uuidv4 } from "uuid";
-import db from "../database/db.js";
+import { storeData, getData } from "../database/db.js";
 
 async function signup(req, res) {
-  const { auths } = db.data;
+  const auths = getData();
   const { email, password, name, cellphone } = req.body;
-  if (auths.length > 0) {
-    auths.map(async (auth) => {
-      if (auth.email === email) {
+  if (auths) {
+    const result = auths.find((auth) => auth.email === email);
+      if (result) {
         res
           .status(400)
           .send({ status: "ERROR", message: "Email already exists" });
       } else {
         const id = uuidv4();
-        auths.push({ id, email, password, name, cellphone });
-        // Write db.data content to db.json
-        await db.write();
+        const newAuth = [...auths];
+        newAuth.push({ id, email, password, name, cellphone });
+
+        storeData(newAuth);
 
         res.status(200).send({
           data: { id, email, name, cellphone },
@@ -22,13 +23,13 @@ async function signup(req, res) {
           status: "OK",
         });
       }
-    });
+    
   } else {
     const id = uuidv4();
-    auths.push({ id, email, password, name, cellphone });
+    const newAuth = [];
+    newAuth.push({ id, email, password, name, cellphone });
 
-    // Write db.data content to db.json
-    await db.write();
+    storeData(newAuth);
 
     res.status(200).send({
       data: { id, email, name, cellphone },
@@ -39,29 +40,30 @@ async function signup(req, res) {
 }
 
 async function signin(req, res) {
-  const { auths } = db.data;
-  if (auths.length > 0) {
-    auths.map(async (auth) => {
-      if (
-        auth.email === req.body.email &&
-        auth.password === req.body.password
-      ) {
-        res.status(200).send({
-          data: {
-            id: auth.id,
-            email: auth.email,
-            name: auth.name,
-            cellphone: auth.cellphone,
-          },
-          message: "User logged successfully",
-          status: "OK",
-        });
-      } else {
-        res
-          .status(400)
-          .send({ status: "ERROR", message: "Invalid email or password" });
-      }
-    });
+  const auths = getData();
+
+  const result = auths.find(
+    (auth) =>
+      auth.email === req.body.email && auth.password === req.body.password
+  );
+
+  if (auths) {
+    if (result) {
+      res.status(200).send({
+        data: {
+          id: result.id,
+          email: result.email,
+          name: result.name,
+          cellphone: result.cellphone,
+        },
+        message: "User logged successfully",
+        status: "OK",
+      });
+    } else {
+      res
+        .status(400)
+        .send({ status: "ERROR", message: "Invalid email or password" });
+    }
   } else {
     res
       .status(400)
